@@ -45,7 +45,7 @@ np.random.seed(42)
 #
 #"""Amazon"""
 
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
+#ruta = r'Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8")
 
 #df['Rating'] = df['Rating'].replace(2, 1) #Ofensivos y Hate 0
@@ -72,7 +72,7 @@ np.random.seed(42)
 
 
 #"""Hate"""
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\labeled_data.csv'
+#ruta = r'labeled_data.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") 
 #df = df.dropna()
 
@@ -92,7 +92,7 @@ np.random.seed(42)
 
 
 #"""Spam"""
-ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
+ruta = r'spam_ham_dataset.csv'
 df = pd.read_csv(ruta, encoding= "utf-8")
 df = df[['label', 'text']]
 
@@ -261,4 +261,5 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
 #Resultados
 resultados_cv = ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test)
 print("\n\n--- Resultados Promedio de la Validación Cruzada (5 Pliegues) ---")
+
 print(resultados_cv)
