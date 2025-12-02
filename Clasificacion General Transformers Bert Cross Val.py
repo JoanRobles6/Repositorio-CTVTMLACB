@@ -57,7 +57,7 @@ model_bert = BertModel.from_pretrained(MODEL_NAME).to(device) # Mueve el modelo 
 
 #"""Amazon"""
 
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
+#ruta = r'Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
 
 
@@ -88,7 +88,7 @@ model_bert = BertModel.from_pretrained(MODEL_NAME).to(device) # Mueve el modelo 
 
 
 #"""Hate"""
-ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\labeled_data.csv'
+ruta = r'labeled_data.csv'
 df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
 df = df.dropna()
 
@@ -108,7 +108,7 @@ print("Shape de y:", len(y))
 
 
 #"""Spam"""
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
+#ruta = r'spam_ham_dataset.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8")
 #df = df[['label', 'text']]
 
@@ -298,4 +298,5 @@ def ejecutar_experimento_bert_cv(x, y):
 
 resultados_bert_cv = ejecutar_experimento_bert_cv(x, y)
 print("\n\n--- Resultados Promedio (BERT) de la Validación Cruzada (5 Pliegues) ---")
+
 print(resultados_bert_cv)
