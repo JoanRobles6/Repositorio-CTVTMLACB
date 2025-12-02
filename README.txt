@@ -1,6 +1,6 @@
 # [Comparision of Text Vectorization Techniques for Machine Learning Applied to Binary Classification]
 
-This repository contains the source code, datasets, and experimental results associated with the research paper titled **"[Insert full paper title here]"**.
+This repository contains the source code, datasets, and experimental results associated with the research paper titled **"[Comparision of Text Vectorization Techniques for Machine Learning Applied to Binary Classification]"**.
 
 The project performs a comparative analysis of text vectorization techniques (BoW, TF-IDF, Word2Vec, Doc2Vec, BERT, among others) applied to classification tasks, along with their statistical validation.
 
@@ -72,7 +72,7 @@ If you use this code or the results for your research, please cite the correspon
 
 # [Comparación de técnicas de vectorización para machine learning aplicado a clasificación binaria]
 
-Este repositorio contiene el código fuente, los datasets y los resultados experimentales asociados al artículo de investigación titulado **"[Inserta aquí el nombre completo de tu artículo]"**.
+Este repositorio contiene el código fuente, los datasets y los resultados experimentales asociados al artículo de investigación titulado **"[Comparision of Text Vectorization Techniques for Machine Learning Applied to Binary Classification]"**.
 
 El proyecto realiza un análisis comparativo de técnicas de vectorización de texto (BoW, TF-IDF, Word2Vec, Doc2Vec, BERT, entre otros) aplicadas a tareas de clasificación, junto con su validación estadística.
 
@@ -141,3 +141,4 @@ Se recomienda tener instalado:
 ## 📝 Cita y Contacto
 
 Si utilizas este código o los resultados para tu investigación, por favor cita el artículo correspondiente o contacta al autor a través de este repositorio.
+
