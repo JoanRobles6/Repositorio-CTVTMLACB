@@ -41,7 +41,7 @@ random.seed(42)
 np.random.seed(42)
 
 #Amazon
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
+#ruta = r'Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
 
 
@@ -69,7 +69,7 @@ np.random.seed(42)
 
 
 #Hate
-#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\labeled_data.csv'
+#ruta = r'labeled_data.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
 #df = df.dropna()
 
@@ -89,7 +89,7 @@ np.random.seed(42)
 
 
 #"""Spam"""
-ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
+ruta = r'spam_ham_dataset.csv'
 df = pd.read_csv(ruta, encoding= "utf-8")
 df = df[['label', 'text']]
 
@@ -274,4 +274,5 @@ def ejecutar_experimento_d2v(x, y):
 
 resultados_d2v_cv = ejecutar_experimento_d2v(x, y)
 print("\n\n--- Resultados Promedio (Doc2Vec) de la Validación Cruzada (5 Pliegues) ---")
+
 print(resultados_d2v_cv)
