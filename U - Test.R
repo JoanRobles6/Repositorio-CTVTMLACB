@@ -1,0 +1,112 @@
+
+countMedia = c(0.9329,
+               0.9153,
+               0.9295,
+               0.9193,
+               0.9438,
+               0.9544,
+               0.9461,
+               0.9179,
+               0.9072,
+               0.9413,
+               0.9746,
+               0.9587,
+               0.9688,
+               0.9753,
+               0.9763
+               
+               
+)
+tfidfMedia = c(0.9325,
+               0.9489,
+               0.9253,
+               0.8619,
+               0.9378,
+               0.9303,
+               0.9413,
+               0.9016,
+               0.8432,
+               0.934,
+               0.9785,
+               0.9826,
+               0.9698,
+               0.8639,
+               0.986
+               
+               
+) 
+
+Word2vMedia = c(0.8989,
+                0.9083,
+                0.9133,
+                0.6031,
+                0.9187,
+                0.887,
+                0.8659,
+                0.8792,
+                0.7478,
+                0.8892,
+                0.9531,
+                0.9516,
+                0.9681,
+                0.8723,
+                0.9683
+                
+                
+)
+
+Doc2vMedia = c(0.8401,
+               0.8589,
+               0.8231,
+               0.7053,
+               0.8643,
+               0.8871,
+               0.9011,
+               0.8703,
+               0.805,
+               0.8884,
+               0.9076,
+               0.9134,
+               0.9093,
+               0.7029,
+               0.9461
+               
+               
+)
+
+
+BertMedia = c(0.9312,
+              0.9325,
+              0.9223,
+              0.7326,
+              0.9402,
+              0.9046,
+              0.9026,
+              0.8675,
+              0.7866,
+              0.8999,
+              0.9741,
+              0.9698,
+              0.9463,
+              0.918,
+              0.9739
+              
+              
+)
+
+
+#U - Test
+
+wilcox.test(countMedia, Word2vMedia, alternative = "greater")
+wilcox.test(countMedia, Doc2vMedia, alternative = "greater")
+wilcox.test(countMedia, BertMedia, alternative = "greater")
+wilcox.test(tfidfMedia, Word2vMedia, alternative = "greater")
+wilcox.test(tfidfMedia, Doc2vMedia, alternative = "greater")
+wilcox.test(tfidfMedia, BertMedia, alternative = "greater")
+wilcox.test(BertMedia, Word2vMedia, alternative = "greater")
+wilcox.test(BertMedia, Doc2vMedia, alternative = "greater")
+wilcox.test(Word2vMedia, Doc2vMedia, alternative = "greater")
+
+
+
+
