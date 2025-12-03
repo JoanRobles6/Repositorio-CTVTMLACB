@@ -74,7 +74,7 @@ Recommended setup:
 
 If you use this code or the results for your research, please cite the corresponding paper or contact the author via this repository.
 
-
+lopez.robles.joan.esau@gmail.com
 
 
 # [Comparación de técnicas de vectorización para machine learning aplicado a clasificación binaria]
@@ -152,3 +152,5 @@ Se recomienda tener instalado:
 ## 📝 Cita y Contacto
 
 Si utilizas este código o los resultados para tu investigación, por favor cita el artículo correspondiente o contacta al autor a través de este repositorio.
+lopez.robles.joan.esau@gmail.com
+
