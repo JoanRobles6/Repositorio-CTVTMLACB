@@ -71,10 +71,21 @@ Recommended setup:
 ---
 
 ## 📝 Citation and Contact
-
-If you use this code or the results for your research, please cite the corresponding paper or contact the author via this repository.
+If you use this code or the associated experimental results, please cite the corresponding
+research article. For questions or clarifications, you may contact the author via this repository
+or by email:
 
 lopez.robles.joan.esau@gmail.com
+
+## About
+This repository contains the source code and supplementary materials (figures and tables)
+used in the experiments reported in the associated research article.
+
+## DOI
+A permanent archived version of this repository is available on Zenodo:
+https://doi.org/10.5281/zenodo.17968928
+
+
 
 
 # [Comparación de técnicas de vectorización para machine learning aplicado a clasificación binaria]
@@ -151,6 +162,19 @@ Se recomienda tener instalado:
 
 ## 📝 Cita y Contacto
 
-Si utilizas este código o los resultados para tu investigación, por favor cita el artículo correspondiente o contacta al autor a través de este repositorio.
+Si utiliza este código o los resultados experimentales asociados, por favor cite el artículo
+científico correspondiente. Para dudas o aclaraciones, puede contactar al autor a través
+de este repositorio o por correo electrónico:
+
 lopez.robles.joan.esau@gmail.com
+
+## Acerca del repositorio
+Este repositorio contiene el código fuente y los materiales suplementarios (figuras y tablas)
+utilizados en los experimentos reportados en el artículo de investigación asociado.
+
+## DOI
+Una versión archivada de forma permanente de este repositorio se encuentra disponible en Zenodo:
+https://doi.org/10.5281/zenodo.17968928
+
+
 
