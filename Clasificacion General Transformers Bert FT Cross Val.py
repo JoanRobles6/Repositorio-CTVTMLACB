@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 12 16:54:54 2025
-Refactored on Sat Jun 15 01:30:00 2025
+Created on Sat Feb 21 19:16:13 2026
 
 @author: esau0
 """
+
+
 
 import pandas as pd
 import numpy as np
@@ -46,6 +47,10 @@ torch.manual_seed(42)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(42)
     
+import torch.nn as nn
+from torch.optim import AdamW
+from torch.utils.data import Dataset, DataLoader
+
     
 # Con que dispositivo
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,7 +60,7 @@ MODEL_NAME = 'bert-base-uncased'
 tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
 model_bert = BertModel.from_pretrained(MODEL_NAME).to(device) # Mueve el modelo a la GPU/CPU
 
-#"""Amazon"""
+"""Amazon"""
 
 #ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
@@ -107,7 +112,7 @@ model_bert = BertModel.from_pretrained(MODEL_NAME).to(device) # Mueve el modelo 
 #print("Shape de y:", len(y))
 
 
-#"""Spam"""
+"""Spam"""
 ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
 df = pd.read_csv(ruta, encoding= "utf-8")
 df = df[['label', 'text']]
@@ -121,13 +126,82 @@ df = df.dropna()
 x = df['text'].astype(str)
 y = df['label']
 
+class TextDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_length=128):
+        self.texts = texts.tolist()
+        self.labels = labels.tolist()
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        
+    def __len__(self):
+        return len(self.texts)
+    
+    def __getitem__(self, idx):
+        encoding = self.tokenizer(
+            self.texts[idx],
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors='pt'
+        )
+        
+        item = {key: val.squeeze(0) for key, val in encoding.items()}
+        item['labels'] = torch.tensor(self.labels[idx], dtype=torch.long)
+        return item
 
+
+class BertFineTuner(nn.Module):
+    def __init__(self, model_name, num_classes=2):
+        super().__init__()
+        self.bert = BertModel.from_pretrained(model_name)
+        self.dropout = nn.Dropout(0.3)
+        self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
+        
+    def forward(self, input_ids, attention_mask):
+        outputs = self.bert(input_ids=input_ids,
+                            attention_mask=attention_mask)
+        cls_output = outputs.last_hidden_state[:, 0, :]
+        x = self.dropout(cls_output)
+        logits = self.classifier(x)
+        return logits, cls_output
+
+
+def fine_tune_bert(x_train, y_train, epochs=2, batch_size=16, lr=2e-5):
+
+    dataset = TextDataset(x_train, y_train, tokenizer)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    model = BertFineTuner(MODEL_NAME).to(device)
+
+    optimizer = AdamW(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
+    model.train()
+
+    for epoch in range(epochs):
+        total_loss = 0
+
+        for batch in dataloader:
+            input_ids = batch['input_ids'].to(device)
+            attention_mask = batch['attention_mask'].to(device)
+            labels = batch['labels'].to(device)
+
+            optimizer.zero_grad()
+            logits, _ = model(input_ids, attention_mask)
+            loss = criterion(logits, labels)
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+
+        print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss/len(dataloader):.4f}")
+
+    return model
 
 def extract_bert_embeddings(texts, tokenizer, model, batch_size=32, max_length=128):
     model.eval()
     embeddings = []
     
-    # texts como lista
     if isinstance(texts, pd.Series):
         texts = texts.tolist()
         
@@ -143,30 +217,46 @@ def extract_bert_embeddings(texts, tokenizer, model, batch_size=32, max_length=1
         ).to(device)
         
         with torch.no_grad():
-            output = model(**encoded_input)
+            if isinstance(model, BertFineTuner):
+                _, cls_embeddings = model(
+                    encoded_input['input_ids'],
+                    encoded_input['attention_mask']
+                )
+            else:
+                output = model(**encoded_input)
+                cls_embeddings = output.last_hidden_state[:, 0, :]
         
-        cls_embeddings = output.last_hidden_state[:, 0, :].cpu().numpy()
-        embeddings.append(cls_embeddings)
+        embeddings.append(cls_embeddings.cpu().numpy())
         
     return np.vstack(embeddings)
 
+
 def ejecutar_experimento_bert_cv(x, y):
     """
-    Función que extrae embeddings estáticos de BERT y evalúa varios clasificadores
-    usando validación cruzada estratificada, sumando los costos de memoria y tiempo.
+    Función que extrae embeddings de BERT y evalúa varios clasificadores
+    usando validación cruzada estratificada.
     """
+
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=42, stratify=y)
     
-    print("\nIniciando extracción de embeddings de BERT estático...\n")
+    print("\nIniciando Fine-Tuning del encoder BERT...\n")
     
-    # ======== INICIO DE MEDICIÓN BERT (TIEMPO Y MEMORIA) ========
     inicio_bert = time.time()  
     mem_inicio_ram_bert = psutil.Process().memory_info().rss / (1024 ** 2)
     
+    # Reiniciamos el medidor de picos de memoria en GPU (si está disponible)
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
+    
+    
+    global model_bert
+    model_bert = fine_tune_bert(x_train, y_train)
+    
+
 
     print("\nExtrayendo embeddings de BERT para datos de entrenamiento...")
+  
+    
     x_train_vectors = extract_bert_embeddings(x_train, tokenizer, model_bert)
     print(f"Dimensiones de embeddings de entrenamiento: {x_train_vectors.shape}")
 
@@ -174,22 +264,21 @@ def ejecutar_experimento_bert_cv(x, y):
     x_test_vectors = extract_bert_embeddings(x_test, tokenizer, model_bert)
     print(f"Dimensiones de embeddings de prueba: {x_test_vectors.shape}")
     
-    # ======== FIN DE MEDICIÓN BERT ========
+    
     fin_bert = time.time()
     mem_fin_ram_bert = psutil.Process().memory_info().rss / (1024 ** 2)
     
-    tiempo_vectorizacion_bert = fin_bert - inicio_bert  
+    #Tiempo de BERT
+    tiempo_preparacion_bert = fin_bert - inicio_bert  
     memoria_ram_bert = max(mem_fin_ram_bert - mem_inicio_ram_bert, 0)
     
     memoria_vram_bert = 0
     if torch.cuda.is_available():
+        # Capturamos el pico máximo de memoria VRAM que consumió el Fine-Tuning
         memoria_vram_bert = torch.cuda.max_memory_allocated() / (1024 ** 2)
-        
+    
     memoria_total_bert = memoria_ram_bert + memoria_vram_bert
     
-    print(f"\n[INFO] Tiempo total de Extracción Estática: {tiempo_vectorizacion_bert:.2f} segundos")
-    print(f"[INFO] Memoria total usada por BERT (RAM + VRAM): {memoria_total_bert:.2f} MiB\n")
-
     modelos = {
         'LogisticRegression': LogisticRegression(max_iter=1000),
         'SVM': SVC(kernel='rbf', C=1.0, probability=True, random_state=42),
@@ -204,11 +293,13 @@ def ejecutar_experimento_bert_cv(x, y):
     resultados_finales = []
 
     for nombre, modelo in modelos.items():
-        print(f"\n======== Procesando Modelo: {nombre} con Validación Cruzada ========\n")
+        print(f"\n\n======== Procesando Modelo: {nombre} con Validación Cruzada ========\n")
         
-        # ======== INICIO DE MEDICIÓN DEL CLASIFICADOR ========
+       # ======== TIEMPO SOLO DEL MODELO (NO BERT) ========
         inicio_modelo = time.time()  
         mem_inicio_modelo = psutil.Process().memory_info().rss / (1024 ** 2)
+        
+        
 
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         fold_accuracy, fold_precision, fold_recall, fold_f1, fold_auc = [], [], [], [], []
@@ -216,10 +307,14 @@ def ejecutar_experimento_bert_cv(x, y):
         for fold, (train_index, val_index) in enumerate(kf.split(x_train_vectors, y_train)):
             print(f"--- Fold {fold+1}/5 ---")
             
+ 
             X_train_fold, X_val_fold = x_train_vectors[train_index], x_train_vectors[val_index]
             y_train_fold, y_val_fold = y_train.iloc[train_index], y_train.iloc[val_index]
+            
 
             modelo.fit(X_train_fold, y_train_fold)
+            
+
             y_pred_fold = modelo.predict(X_val_fold)
             
             fold_accuracy.append(accuracy_score(y_val_fold, y_pred_fold))
@@ -231,25 +326,31 @@ def ejecutar_experimento_bert_cv(x, y):
                 y_probs_fold = modelo.predict_proba(X_val_fold)[:, 1]
                 fold_auc.append(roc_auc_score(y_val_fold, y_probs_fold))
             else:
-                fold_auc.append(float('nan')) 
-
+                fold_auc.append(float('nan')) # Usar NaN si no se puede calcular AUC
+        
+        
+       
+        
+        
         print(f"\nGenerando y guardando gráficos para {nombre} usando el conjunto de prueba final...")
+
         modelo.fit(x_train_vectors, y_train)
         y_pred_test = modelo.predict(x_test_vectors)
         
-        # ======== FIN DE MEDICIÓN DEL CLASIFICADOR ========
+        #Fin de medicion 
         fin_modelo = time.time()
         mem_fin_modelo = psutil.Process().memory_info().rss / (1024 ** 2)
         
         tiempo_modelo = fin_modelo - inicio_modelo  
         memoria_modelo = max(mem_fin_modelo - mem_inicio_modelo, 0)
+        
 
+
+      
         # ======== COSTO COMPUTACIONAL TOTAL ========
-        tiempo_total_pipeline = tiempo_vectorizacion_bert + tiempo_modelo 
+        # Sumamos lo que costó preparar BERT + lo que costó entrenar este modelo específico
+        tiempo_total_pipeline = tiempo_preparacion_bert + tiempo_modelo 
         memoria_total_pipeline = memoria_total_bert + memoria_modelo
-
-        print(f"[INFO] Tiempo total (BERT Estático + {nombre}): {tiempo_total_pipeline:.2f} segundos")
-        print(f"[INFO] Memoria total (BERT Estático + {nombre}): {memoria_total_pipeline:.1f} MiB\n")
 
         resultados_finales.append({
             'Modelo': nombre,
@@ -262,18 +363,22 @@ def ejecutar_experimento_bert_cv(x, y):
             'Memory (MiB)': round(memoria_total_pipeline, 1)
         })
         
+        
+        
         MC = confusion_matrix(y_test, y_pred_test)
         plt.figure(figsize=(6, 4))
         sns.heatmap(MC, annot=True, fmt='d', cmap='Blues', xticklabels=['Clase 0', 'Clase 1'], yticklabels=['Clase 0', 'Clase 1'])
         plt.title(f'Confusion Matrix - {nombre} (BERT)')
         plt.savefig(f'graficos_bert_cv/matriz_confusion_{nombre}.png', dpi=350, bbox_inches='tight')
-        plt.close() 
+        plt.show()
 
+        # Curva ROC y Distribución de Probabilidades
         if hasattr(modelo, "predict_proba"):
             y_probs_test = modelo.predict_proba(x_test_vectors)[:, 1]
             auc_test = roc_auc_score(y_test, y_probs_test)
             fpr, tpr, _ = roc_curve(y_test, y_probs_test)
             
+            # Gráfico de Curva ROC
             plt.figure(figsize=(10, 7))
             plt.plot(fpr, tpr, label=f'Curva ROC (AUC = {auc_test:.2f})')
             plt.plot([0, 1], [0, 1], linestyle='--', color='red')
@@ -281,8 +386,9 @@ def ejecutar_experimento_bert_cv(x, y):
             plt.legend()
             plt.grid(True)
             plt.savefig(f'graficos_bert_cv/curva_roc_{nombre}.png', dpi=300, bbox_inches='tight')
-            plt.close()
+            plt.show()
             
+            # Gráfico de Distribución de Probabilidades
             plt.figure(figsize=(10, 7))
             sns.kdeplot(y_probs_test[y_test == 0], fill=True, label='Class 0')
             sns.kdeplot(y_probs_test[y_test == 1], fill=True, label='Class 1')
@@ -290,7 +396,7 @@ def ejecutar_experimento_bert_cv(x, y):
             plt.legend()
             plt.grid(True)
             plt.savefig(f'graficos_bert_cv/distribucion_prob_{nombre}.png', dpi=350, bbox_inches='tight')
-            plt.close()
+            plt.show()
             
     df_resultados = pd.DataFrame(resultados_finales)
     return df_resultados

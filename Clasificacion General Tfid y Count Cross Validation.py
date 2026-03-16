@@ -45,7 +45,7 @@ np.random.seed(42)
 #
 #"""Amazon"""
 
-#ruta = r'Amazon_Unlocked_Mobile.csv'
+#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8")
 
 #df['Rating'] = df['Rating'].replace(2, 1) #Ofensivos y Hate 0
@@ -71,41 +71,41 @@ np.random.seed(42)
 
 
 
-#"""Hate"""
-#ruta = r'labeled_data.csv'
-#df = pd.read_csv(ruta, encoding= "utf-8") 
-#df = df.dropna()
+"""Hate"""
+ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\labeled_data.csv'
+df = pd.read_csv(ruta, encoding= "utf-8") 
+df = df.dropna()
 
-#df['class'] = df['class'].replace(1, 0) #Ofensivos y Hate 0
-#df['class'] = df['class'].replace(2, 1) #Neither 1
+df['class'] = df['class'].replace(1, 0) #Ofensivos y Hate 0
+df['class'] = df['class'].replace(2, 1) #Neither 1
 
 
-#print(df.head())
-#print(df['class'].value_counts())
+print(df.head())
+print(df['class'].value_counts())
 
 #Separamos Caracteristicas"""
-#x = df['tweet'].astype(str)
-#y = df['class']
+x = df['tweet'].astype(str)
+y = df['class']
 
-#print("Shape de x:", len(x))
-#print("Shape de y:", len(y))
+print("Shape de x:", len(x))
+print("Shape de y:", len(y))
 
 
 #"""Spam"""
-ruta = r'spam_ham_dataset.csv'
-df = pd.read_csv(ruta, encoding= "utf-8")
-df = df[['label', 'text']]
+#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
+#df = pd.read_csv(ruta, encoding= "utf-8")
+#df = df[['label', 'text']]
 
-codificacion = {
-    'ham' : 0, #ham
-   'spam': 1} #spam
+#codificacion = {
+#    'ham' : 0, #ham
+#   'spam': 1} #spam
 
-df['label'] = df['label'].map(codificacion)
-df = df.dropna()
+#df['label'] = df['label'].map(codificacion)
+#df = df.dropna()
 
-"""Separamos Caracterisitcas"""
-x = df['text'].astype(str)
-y = df['label']
+#"""Separamos Caracterisitcas"""
+#x = df['text'].astype(str)
+#y = df['label']
 
 
 
@@ -125,7 +125,8 @@ print("=============================\n")
 def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
     """
     Esta función aplica validación cruzada para evaluar múltiples modelos
-    con un vectorizador específico y guarda los gráficos resultantes.
+    con un vectorizador específico, midiendo el costo computacional total 
+    (vectorización en cada pliegue + entrenamiento).
     """
     
     vectorizador = TfidfVectorizer()
@@ -139,7 +140,6 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
         'MLPClassifier': MLPClassifier(max_iter=500, hidden_layer_sizes=(200, 50), activation="relu", random_state=42)
     }
 
-    
     if not os.path.exists('graficos'):
         os.makedirs('graficos')
 
@@ -148,9 +148,9 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
     for nombre, modelo in modelos.items():
         print(f"\n\n======== Procesando Modelo: {nombre} ========\n")
         
+        # ======== INICIO DE MEDICIÓN (VECTORIZACIÓN + CLASIFICADOR) ========
         inicio_tiempo = time.time()
-        mem_inicio = psutil.Process().memory_info().rss / (1024 ** 2)  # memoria inicial (MiB)
-
+        mem_inicio = psutil.Process().memory_info().rss / (1024 ** 2)  
         
         fold_accuracy, fold_precision, fold_recall, fold_f1, fold_auc = [], [], [], [], []
 
@@ -160,6 +160,7 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
             X_train_fold, X_val_fold = x_train.iloc[train_index], x_train.iloc[val_index]
             y_train_fold, y_val_fold = y_train.iloc[train_index], y_train.iloc[val_index]
             
+            # Vectorización intra-fold
             X_train_fold_vec = vectorizador.fit_transform(X_train_fold)
             X_val_fold_vec = vectorizador.transform(X_val_fold)
 
@@ -175,22 +176,24 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
                 y_probs_fold = modelo.predict_proba(X_val_fold_vec)[:, 1]
                 fold_auc.append(roc_auc_score(y_val_fold, y_probs_fold))
             else:
-                fold_auc.append(None)
+                fold_auc.append(float('nan'))
         
-        
+        # Evaluación final sobre datos completos de train y test
         x_train_vec_full = vectorizador.fit_transform(x_train)
         x_test_vec_full = vectorizador.transform(x_test)
         
         modelo.fit(x_train_vec_full, y_train)
         y_pred_test = modelo.predict(x_test_vec_full)
         
-        #Guardamos la medicion
+        # ======== FIN DE MEDICIÓN COMPUTACIONAL ========
         fin_tiempo = time.time()
         mem_fin = psutil.Process().memory_info().rss / (1024 ** 2)
+        
         tiempo_total = fin_tiempo - inicio_tiempo
         memoria_usada = max(mem_fin - mem_inicio, 0)
-        print(f"\nTiempo total: {tiempo_total:.2f} segundos")
-        print(f"Memoria usada: {memoria_usada:.1f} MiB\n")
+        
+        print(f"\n[INFO] Tiempo total (Vectorización + {nombre}): {tiempo_total:.2f} segundos")
+        print(f"[INFO] Memoria usada (Vectorización + {nombre}): {memoria_usada:.1f} MiB\n")
         
         resultados_finales.append({
             'Modelo': nombre,
@@ -198,15 +201,14 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
             'Precision': f"{np.mean(fold_precision):.4f} ± {np.std(fold_precision):.4f}",
             'Recall': f"{np.mean(fold_recall):.4f} ± {np.std(fold_recall):.4f}",
             'F1-Score': f"{np.mean(fold_f1):.4f} ± {np.std(fold_f1):.4f}",
-            'AUC': f"{np.mean([auc for auc in fold_auc if auc is not None]):.4f} ± {np.std([auc for auc in fold_auc if auc is not None]):.4f}" if any(fold_auc) else "N/A",
+            'AUC': f"{np.nanmean(fold_auc):.4f} ± {np.nanstd(fold_auc):.4f}" if not np.isnan(fold_auc).all() else "N/A",
             'Runtime (s)': round(tiempo_total, 2),
             'Memory (MiB)': round(memoria_usada, 1)
         })
 
-        
         print(f"Generando gráficos para {nombre}...")
-       
-                # === MATRIZ DE CONFUSIÓN ===
+        
+        # === MATRIZ DE CONFUSIÓN ===
         MC = confusion_matrix(y_test, y_pred_test)
         plt.figure(figsize=(10, 7))
         sns.heatmap(MC, annot=True, fmt='d', cmap='Blues', cbar=False,
@@ -218,8 +220,7 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
         plt.yticks(fontsize=12)
         plt.tight_layout()
         plt.savefig(f'graficos/matriz_confusion_{nombre}.png', dpi=350, bbox_inches='tight')
-        plt.show()
-        
+        plt.close()
         
         # === CURVA ROC ===
         if hasattr(modelo, "predict_proba"):
@@ -237,8 +238,7 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
             plt.grid(alpha=0.3)
             plt.tight_layout()
             plt.savefig(f'graficos/curva_roc_{nombre}.png', dpi=350, bbox_inches='tight')
-            plt.show()
-        
+            plt.close()
         
             # === DISTRIBUCIÓN DE PROBABILIDADES ===
             plt.figure(figsize=(10, 7))
@@ -251,15 +251,12 @@ def ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test):
             plt.grid(alpha=0.3)
             plt.tight_layout()
             plt.savefig(f'graficos/distribucion_probabilidades_{nombre}.png', dpi=350, bbox_inches='tight')
-            plt.show()
+            plt.close()
                 
-            
-
     df_resultados = pd.DataFrame(resultados_finales)
     return df_resultados
 
 #Resultados
 resultados_cv = ejecutar_con_validacion_cruzada(x_train, y_train, x_test, y_test)
 print("\n\n--- Resultados Promedio de la Validación Cruzada (5 Pliegues) ---")
-
 print(resultados_cv)

@@ -42,7 +42,7 @@ random.seed(42)
 np.random.seed(42)
 
 #Amazon
-#ruta = r'Amazon_Unlocked_Mobile.csv'
+#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\Amazon_Unlocked_Mobile.csv'
 #df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
 
 
@@ -70,40 +70,40 @@ np.random.seed(42)
 
 
 #Hate
-#ruta = r'labeled_data.csv'
-#df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
-#df = df.dropna()
+ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\labeled_data.csv'
+df = pd.read_csv(ruta, encoding= "utf-8") #Para que me adapte todo el texto en espanol, quitar acentos y minusculas
+df = df.dropna()
 
-#df['class'] = df['class'].replace(1, 0) #Ofensivos y Hate 0
-#df['class'] = df['class'].replace(2, 1) #Neither 1
+df['class'] = df['class'].replace(1, 0) #Ofensivos y Hate 0
+df['class'] = df['class'].replace(2, 1) #Neither 1
 
 
-#print(df.head())
-#print(df['class'].value_counts())
+print(df.head())
+print(df['class'].value_counts())
 
-#"""Separamos Caracteristicas"""
-#x = df['tweet'].astype(str)
-#y = df['class']
+"""Separamos Caracteristicas"""
+x = df['tweet'].astype(str)
+y = df['class']
 
-#print("Shape de x:", len(x))
-#print("Shape de y:", len(y))
+print("Shape de x:", len(x))
+print("Shape de y:", len(y))
 
 
 #"""Spam"""
-ruta = r'spam_ham_dataset.csv'
-df = pd.read_csv(ruta, encoding= "utf-8")
-df = df[['label', 'text']]
+#ruta = r'C:\Users\esau0\Desktop\Maestria D\Materias\Machine Learning\Vectorización\spam_ham_dataset.csv'
+#df = pd.read_csv(ruta, encoding= "utf-8")
+#df = df[['label', 'text']]
 
-codificacion = {
-    'ham' : 0, #ham
-   'spam': 1} #spam
+#codificacion = {
+#    'ham' : 0, #ham
+#   'spam': 1} #spam
 
-df['label'] = df['label'].map(codificacion)
-df = df.dropna()
+#df['label'] = df['label'].map(codificacion)
+#df = df.dropna()
 
 #Separamos Caracterisitcas
-x = df['text'].astype(str)
-y = df['label']
+#x = df['text'].astype(str)
+#y = df['label']
 
 
 
@@ -117,16 +117,16 @@ def preprocess_text_w2v(text):
 def ejecutar_experimento_w2v(x, y):
     """
     Función que entrena un modelo Word2Vec y luego evalúa varios clasificadores
-    usando validación cruzada estratificada.
+    usando validación cruzada estratificada, midiendo el costo computacional total.
     """
-    
-    mem_inicio = psutil.Process().memory_info().rss / (1024 ** 2)
     
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=42, stratify=y)
     
-    print("\nPreprocesando texto para Word2Vec...")
+    print("\nPreprocesando texto y preparando Word2Vec...")
     
-    inicio_vectorizacion = time.time()
+    # ======== INICIO DE MEDICIÓN VECTORIZACIÓN (W2V) ========
+    inicio_w2v = time.time()
+    mem_inicio_ram_w2v = psutil.Process().memory_info().rss / (1024 ** 2)
     
     x_train_processed = x_train.apply(preprocess_text_w2v)
     x_test_processed = x_test.apply(preprocess_text_w2v)
@@ -151,9 +151,15 @@ def ejecutar_experimento_w2v(x, y):
     x_test_vectors = np.array([document_vector(w2v_model, doc) for doc in x_test_processed])
     print("Transformación completada.")
     
-    fin_vectorizacion = time.time()
-    tiempo_vectorizacion = fin_vectorizacion - inicio_vectorizacion
+    # ======== FIN DE MEDICIÓN VECTORIZACIÓN (W2V) ========
+    fin_w2v = time.time()
+    mem_fin_ram_w2v = psutil.Process().memory_info().rss / (1024 ** 2)
     
+    tiempo_preparacion_w2v = fin_w2v - inicio_w2v
+    memoria_ram_w2v = max(mem_fin_ram_w2v - mem_inicio_ram_w2v, 0)
+    
+    print(f"\n[INFO] Tiempo total de Preparación W2V: {tiempo_preparacion_w2v:.2f} segundos")
+    print(f"[INFO] Memoria usada por W2V: {memoria_ram_w2v:.2f} MiB\n")
 
     modelos = {
         'LogisticRegression': LogisticRegression(max_iter=1000),
@@ -169,18 +175,19 @@ def ejecutar_experimento_w2v(x, y):
     resultados_finales = []
 
     for nombre, modelo in modelos.items():
-        print(f"\n\n======== Procesando Modelo: {nombre} con Validación Cruzada ========\n")
+        print(f"\n======== Procesando Modelo: {nombre} con Validación Cruzada ========\n")
         
-        #Tiempo
+        # ======== INICIO DE MEDICIÓN DEL CLASIFICADOR ========
         inicio_modelo = time.time()
-
+        mem_inicio_modelo = psutil.Process().memory_info().rss / (1024 ** 2)
         
         fold_accuracy, fold_precision, fold_recall, fold_f1, fold_auc = [], [], [], [], []
 
         # VALIDACIÓN CRUZADA ESTRATIFICADA 
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        # Se itera sobre los vectores de entrenamiento
-        for train_index, val_index in kf.split(x_train_vectors, y_train):
+        
+        for fold, (train_index, val_index) in enumerate(kf.split(x_train_vectors, y_train)):
+            print(f"--- Fold {fold+1}/5 ---")
             X_train_fold, X_val_fold = x_train_vectors[train_index], x_train_vectors[val_index]
             y_train_fold, y_val_fold = y_train.iloc[train_index], y_train.iloc[val_index]
             
@@ -196,25 +203,25 @@ def ejecutar_experimento_w2v(x, y):
                 y_probs_fold = modelo.predict_proba(X_val_fold)[:, 1]
                 fold_auc.append(roc_auc_score(y_val_fold, y_probs_fold))
             else:
-                fold_auc.append(None)
+                fold_auc.append(float('nan'))
         
-        
-        
-        print(f"Generando y guardando gráficos para {nombre} usando el conjunto de prueba final...")
+        print(f"\nGenerando y guardando gráficos para {nombre} usando el conjunto de prueba final...")
         modelo.fit(x_train_vectors, y_train) 
         y_pred_test = modelo.predict(x_test_vectors)
         
-        #Guardamos la medicion
+        # ======== FIN DE MEDICIÓN DEL CLASIFICADOR ========
         fin_modelo = time.time()
+        mem_fin_modelo = psutil.Process().memory_info().rss / (1024 ** 2)
+        
         tiempo_modelo = fin_modelo - inicio_modelo
+        memoria_modelo = max(mem_fin_modelo - mem_inicio_modelo, 0)
         
-        tiempo_total = tiempo_modelo + tiempo_vectorizacion
+        # ======== COSTO COMPUTACIONAL TOTAL ========
+        tiempo_total_pipeline = tiempo_preparacion_w2v + tiempo_modelo
+        memoria_total_pipeline = memoria_ram_w2v + memoria_modelo
         
-        mem_fin = psutil.Process().memory_info().rss / (1024 ** 2) 
-        memoria_usada = max(mem_fin - mem_inicio, 0)
-        
-        print(f"Tiempo total (incluye Doc2Vec): {tiempo_total:.2f} segundos")
-        print(f"Memoria usada: {memoria_usada:.1f} MiB\n")
+        print(f"[INFO] Tiempo total (W2V + {nombre}): {tiempo_total_pipeline:.2f} segundos")
+        print(f"[INFO] Memoria total (W2V + {nombre}): {memoria_total_pipeline:.1f} MiB\n")
         
         resultados_finales.append({
             'Modelo': nombre,
@@ -222,18 +229,18 @@ def ejecutar_experimento_w2v(x, y):
             'Precision': f"{np.mean(fold_precision):.4f} ± {np.std(fold_precision):.4f}",
             'Recall': f"{np.mean(fold_recall):.4f} ± {np.std(fold_recall):.4f}",
             'F1-Score': f"{np.mean(fold_f1):.4f} ± {np.std(fold_f1):.4f}",
-            'AUC': f"{np.mean([auc for auc in fold_auc if auc is not None]):.4f} ± {np.std([auc for auc in fold_auc if auc is not None]):.4f}" if any(fold_auc) else "N/A",
-            'Runtime (s)': round(tiempo_total, 2),
-            'Memory (MiB)': round(memoria_usada, 1)
+            'AUC': f"{np.nanmean(fold_auc):.4f} ± {np.nanstd(fold_auc):.4f}" if not np.isnan(fold_auc).all() else "N/A",
+            'Runtime (s)': round(tiempo_total_pipeline, 2),
+            'Memory (MiB)': round(memoria_total_pipeline, 1)
         })
         
         # Matriz de Confusión
         MC = confusion_matrix(y_test, y_pred_test)
-        plt.figure(figsize=(10, 7))
-        sns.heatmap(MC, annot=True, fmt='d', cmap='Blues')
+        plt.figure(figsize=(6, 4))
+        sns.heatmap(MC, annot=True, fmt='d', cmap='Blues', xticklabels=['Clase 0', 'Clase 1'], yticklabels=['Clase 0', 'Clase 1'])
         plt.title(f'Confusion Matrix - {nombre} (Word2Vec)')
         plt.savefig(f'graficos_w2v/matriz_confusion_{nombre}.png', dpi=350, bbox_inches='tight')
-        plt.show()
+        plt.close()
 
         # Curva ROC y Distribución de Probabilidades
         if hasattr(modelo, "predict_proba"):
@@ -248,25 +255,22 @@ def ejecutar_experimento_w2v(x, y):
             plt.title(f'ROC Curve - {nombre} (Word2Vec)')
             plt.legend()
             plt.grid(True)
-            plt.savefig(f'graficos_w2v/curva_roc_{nombre}.png', dpi=350, bbox_inches='tight')
-            plt.show()
+            plt.savefig(f'graficos_w2v/curva_roc_{nombre}.png', dpi=300, bbox_inches='tight')
+            plt.close()
             
-
-            # Gráfico de Distribución de Probabilidades (KDE)
+            # Gráfico de Distribución de Probabilidades
             plt.figure(figsize=(10, 7))
             sns.kdeplot(y_probs_test[y_test == 0], fill=True, label='Clase 0')
             sns.kdeplot(y_probs_test[y_test == 1], fill=True, label='Clase 1')
-            plt.title(f"Predicted Probability Distribution- {nombre} (Word2Vec)")
+            plt.title(f"Predicted Probability Distribution - {nombre} (Word2Vec)")
             plt.legend()
             plt.grid(True)
             plt.savefig(f'graficos_w2v/distribucion_prob_{nombre}.png', dpi=350, bbox_inches='tight')
-            plt.show()
+            plt.close()
             
-
     df_resultados = pd.DataFrame(resultados_finales)
     return df_resultados
 
 resultados_w2v_cv = ejecutar_experimento_w2v(x, y)
 print("\n\n--- Resultados Promedio (Word2Vec) de la Validación Cruzada (5 Pliegues) ---")
-
 print(resultados_w2v_cv)
