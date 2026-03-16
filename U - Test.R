@@ -94,6 +94,25 @@ BertMedia = c(0.9312,
               
 )
 
+BertFTMedia= c(
+  0.9937,
+  0.9933,
+  0.9934,
+  0.9914,
+  0.9934,
+  0.9919,
+  0.9918,
+  0.9915,
+  0.9699,
+  0.9917,
+  0.999,
+  0.9993,
+  0.9988,
+  0.9983,
+  0.999
+  
+)
+
 
 #U - Test
 
@@ -107,6 +126,11 @@ wilcox.test(BertMedia, Word2vMedia, alternative = "greater")
 wilcox.test(BertMedia, Doc2vMedia, alternative = "greater")
 wilcox.test(Word2vMedia, Doc2vMedia, alternative = "greater")
 
+wilcox.test(BertFTMedia, countMedia, alternative = "greater")
+wilcox.test(BertFTMedia, tfidfMedia, alternative = "greater")
+wilcox.test(BertFTMedia, Word2vMedia, alternative = "greater")
+wilcox.test(BertFTMedia, Doc2vMedia, alternative = "greater")
+wilcox.test(BertFTMedia, BertMedia, alternative = "greater")
 
 
 

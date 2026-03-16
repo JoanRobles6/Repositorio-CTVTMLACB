@@ -94,6 +94,25 @@ BertMedia = c(0.9312,
               
 )
 
+BertFTMedia= c(
+  0.9937,
+  0.9933,
+  0.9934,
+  0.9914,
+  0.9934,
+  0.9919,
+  0.9918,
+  0.9915,
+  0.9699,
+  0.9917,
+  0.999,
+  0.9993,
+  0.9988,
+  0.9983,
+  0.999
+  
+)
+
 
 #1. Normaldiad de los datos-----> Prueba de Shapiro
 shapiro.test(countMedia)
@@ -101,6 +120,7 @@ shapiro.test(tfidfMedia)
 shapiro.test(Word2vMedia)
 shapiro.test(Doc2vMedia)
 shapiro.test(BertMedia)
+shapiro.test(BertFTMedia)
 
 
 
